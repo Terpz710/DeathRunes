@@ -5,4 +5,14 @@ branches:
 projects:
   DeathRunes:
     path: ""
+    icon: "image.png"
+    compressBuilds: bool = true
+    excludeDirs:
+      [
+        "resources"
+      ]
+    excludeFiles:
+      [
+        "image.png"
+      ]
 ...
