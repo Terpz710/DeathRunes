@@ -105,13 +105,13 @@ class DeathRunes extends PluginBase implements Listener{
             }
         }
         for($i = 0, $size = $armorInventory->getSize(); $i < $size; ++$i){
-            if($inventory->isSlotEmpty($i)){
+            if($armorInventory->isSlotEmpty($i)){
                 continue;
             }
             $item = $armorInventory->getItem($i);
             if($item->keepOnDeath()){
                 $item->setKeepOnDeath(false);
-                $inventory->setItem($i, $item);
+                $armorInventory->setItem($i, $item);
             }
         }
     }
