@@ -1,7 +1,7 @@
 ---
 name: DeathRunes
 version: 1.0.0
-main: PrograMistV1\DeathRunes\Main
+main: PrograMistV1\DeathRunes\DeathRunes
 api: 5.0.0
 src-namespace-prefix: PrograMistV1\DeathRunes
 ...
