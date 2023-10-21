@@ -6,10 +6,6 @@ namespace PrograMistV1\DeathRunes\commands;
 use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\utils\InvalidCommandSyntaxException;
-use pocketmine\item\enchantment\EnchantingHelper;
-use pocketmine\item\enchantment\EnchantmentInstance;
-use pocketmine\item\enchantment\StringToEnchantmentParser;
-use pocketmine\item\Item;
 use pocketmine\permission\DefaultPermissionNames;
 use pocketmine\permission\DefaultPermissions;
 use pocketmine\permission\Permission;
@@ -23,19 +19,23 @@ class getRune extends Command{
         $op = PermissionManager::getInstance()->getPermission(DefaultPermissionNames::GROUP_OPERATOR);
         DefaultPermissions::registerPermission(new Permission("command.getrune"), [$op]);
         $this->setPermission("command.getrune");
-        parent::__construct("getrune", "allows you to get a rune into your inventory", "/getrune \<runeID> <count=1>");
+        parent::__construct("getrune", "allows you to get a rune into your inventory", "/getrune <runeID=list> [count: int]");
     }
 
     public function execute(CommandSender $sender, string $commandLabel, array $args) : void{
         if(!$sender instanceof Player){
             return;
         }
-        if(count($args) < 1 || count($args) > 2){
+        if(count($args) > 2){
             throw new InvalidCommandSyntaxException();
         }
-        $rune = strtolower($args[0]);
         $runes = DeathRunes::getRunes();
         $list = array_keys($runes);
+        if(count($args) == 0){
+            $sender->sendMessage("Rune list: ".TextFormat::RESET.implode(", ", $list));
+            return;
+        }
+        $rune = strtolower($args[0]);
         if(!in_array($rune, $list)){
             $sender->sendMessage(TextFormat::RED."Unknown rune name ".$args[0]."!\n"."Available runes: ".TextFormat::RESET.implode(", ", $list));
             return;
