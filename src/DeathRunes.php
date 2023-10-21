@@ -77,6 +77,9 @@ class DeathRunes extends PluginBase implements Listener{
                 $target = $action->getTargetItem();
                 if(in_array($target->getCustomName(), array_keys(self::$runes)) && !$action->getInventory() instanceof PlayerCursorInventory){
                     $source = $action->getSourceItem();
+                    if($source->isNull()){
+                        return;
+                    }
                     /** @var Item $item */
                     foreach(self::$runes[$target->getCustomName()] as $item){
                         if($item->equals($source, false, false) && !$source->keepOnDeath()){
@@ -85,13 +88,11 @@ class DeathRunes extends PluginBase implements Listener{
                             $target->pop();
                             $source->setKeepOnDeath(true);
                             $player->getCursorInventory()->setItem(0, $target);
-                            $player->getInventory()->setItem($action->getSlot(), $source);
-                            return;
-                        }elseif(!$source->isNull()){
-                            $this->playSound($player, "note.bass");
+                            $action->getInventory()->setItem($action->getSlot(), $source);
                             return;
                         }
                     }
+                    $this->playSound($player, "note.bass");
                 }
             }
         }
