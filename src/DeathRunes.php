@@ -14,6 +14,8 @@ use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\StringToEnchantmentParser;
 use pocketmine\item\Item;
 use pocketmine\item\VanillaItems;
+use pocketmine\network\mcpe\protocol\PlaySoundPacket;
+use pocketmine\player\Player;
 use pocketmine\plugin\PluginBase;
 use pocketmine\utils\Config;
 use pocketmine\utils\TextFormat;
@@ -36,7 +38,7 @@ class DeathRunes extends PluginBase implements Listener{
                     "item" => "book",
                     "lore" => '$black black '.'$dark_blue dark_blue '.'$dark_green dark_green '."\n".'$dark_aqua dark_aqua '.'$dark_red dark_red '.'$dark_purple dark_purple '."\n".'$gold gold '.'$gray gray '.'$dark_gray text '."\n".'$blue text '.'$green green '.'$aqua aqua '."\n".'$red red '.'$light_purple light_purple '.'$yellow yellow '."\n".'$white white '.'$minecoin_gold minecoin_gold ',
                     "items" => [
-                        "diamond_helmet", "diamond_chestplate"
+                        "diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots"
                     ]
                 ]
             ]
@@ -79,15 +81,26 @@ class DeathRunes extends PluginBase implements Listener{
                     foreach(self::$runes[$target->getCustomName()] as $item){
                         if($item->equals($source, false, false) && !$source->keepOnDeath()){
                             $event->cancel();
+                            $this->playSound($player, "note.bell");
                             $target->pop();
                             $source->setKeepOnDeath(true);
                             $player->getCursorInventory()->setItem(0, $target);
                             $player->getInventory()->setItem($action->getSlot(), $source);
+                            return;
+                        }elseif(!$source->isNull()){
+                            $this->playSound($player, "note.bass");
+                            return;
                         }
                     }
                 }
             }
         }
+    }
+
+    private function playSound(Player $player, string $sound) : void{
+        $pos = $player->getPosition();
+        $packet = PlaySoundPacket::create($sound, $pos->getX(), $pos->getY(), $pos->getZ(), 150, 1);
+        $player->getNetworkSession()->sendDataPacket($packet);
     }
 
     public function onDeath(PlayerRespawnEvent $event) : void{
