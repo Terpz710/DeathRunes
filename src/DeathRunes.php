@@ -23,6 +23,7 @@ use PrograMistV1\DeathRunes\commands\getRune;
 use Symfony\Component\Filesystem\Path;
 
 class DeathRunes extends PluginBase implements Listener{
+    public const COMMAND_GETRUNE = "deathrunes.command.getrune";
     /**
      * @var array<string, array<string, string|array<string>>>
      */
@@ -55,7 +56,7 @@ class DeathRunes extends PluginBase implements Listener{
             self::$runesData[strtolower($runeId)] = $rune;
             self::$runes[$rune["name"]] = $rune["items"];
         }
-        $this->getServer()->getCommandMap()->register("runes", new getRune());
+        $this->getServer()->getCommandMap()->register("deathrunes", new getRune($this));
     }
 
     private function str_replace(string $text) : string{
