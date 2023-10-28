@@ -12,16 +12,17 @@ use pocketmine\permission\Permission;
 use pocketmine\permission\PermissionManager;
 use pocketmine\player\Player;
 use pocketmine\plugin\Plugin;
+use pocketmine\plugin\PluginOwned;
 use pocketmine\plugin\PluginOwnedTrait;
 use pocketmine\utils\TextFormat;
 use PrograMistV1\DeathRunes\DeathRunes;
 
-class getRune extends Command{
+class getRune extends Command implements PluginOwned{
     use PluginOwnedTrait;
     public function __construct(Plugin $plugin){
         $this->owningPlugin = $plugin;
         $op = PermissionManager::getInstance()->getPermission(DefaultPermissionNames::GROUP_OPERATOR);
-        DefaultPermissions::registerPermission(new Permission("command.getrune"), [$op]);
+        DefaultPermissions::registerPermission(new Permission(DeathRunes::COMMAND_GETRUNE), [$op]);
         $this->setPermission(DeathRunes::COMMAND_GETRUNE);
         parent::__construct("getrune", "allows you to get a rune into your inventory", "/getrune <runeID=list> [count: int]");
     }
