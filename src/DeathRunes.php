@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PrograMistV1\DeathRunes;
 
+use Exception;
 use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerRespawnEvent;
@@ -12,6 +13,7 @@ use pocketmine\item\enchantment\EnchantingHelper;
 use pocketmine\item\enchantment\EnchantmentInstance;
 use pocketmine\item\enchantment\StringToEnchantmentParser;
 use pocketmine\item\Item;
+use pocketmine\item\StringToItemParser;
 use pocketmine\item\VanillaItems;
 use pocketmine\network\mcpe\protocol\PlaySoundPacket;
 use pocketmine\player\Player;
@@ -26,6 +28,9 @@ class DeathRunes extends PluginBase implements Listener{
 
     private static array $runesData = [];
 
+    /**
+     * @throws Exception
+     */
     protected function onEnable(): void{
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $runes = new Config(Path::join($this->getDataFolder(), "runes.yml"), Config::YAML,
@@ -47,7 +52,8 @@ class DeathRunes extends PluginBase implements Listener{
             $rune["item"] = VanillaItems::$item();
             foreach($rune["items"] as $index => $item){
                 unset($rune["items"][$index]);
-                $rune["items"][] = VanillaItems::$item();
+
+                $rune["items"][] = StringToItemParser::getInstance()->parse($item) ?? throw new Exception("Unknown item: $item");
             }
             self::$runesData[strtolower($runeId)] = $rune;
         }
