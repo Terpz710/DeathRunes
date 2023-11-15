@@ -7,7 +7,6 @@ namespace PrograMistV1\DeathRunes;
 use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerRespawnEvent;
-use pocketmine\inventory\PlayerCursorInventory;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\enchantment\EnchantingHelper;
 use pocketmine\item\enchantment\EnchantmentInstance;
@@ -24,20 +23,17 @@ use Symfony\Component\Filesystem\Path;
 
 class DeathRunes extends PluginBase implements Listener{
     public const COMMAND_GETRUNE = "deathrunes.command.getrune";
-    /**
-     * @var array<string, array<string, string|array<string>>>
-     */
-    private static array $runesData = [];
-    private static array $runes = [];
 
-    protected function onEnable() : void{
+    private static array $runesData = [];
+
+    protected function onEnable(): void{
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
         $runes = new Config(Path::join($this->getDataFolder(), "runes.yml"), Config::YAML,
             [
                 "armor" => [
                     "name" => "Armor Rune",
                     "item" => "book",
-                    "lore" => '$black black '.'$dark_blue dark_blue '.'$dark_green dark_green '."\n".'$dark_aqua dark_aqua '.'$dark_red dark_red '.'$dark_purple dark_purple '."\n".'$gold gold '.'$gray gray '.'$dark_gray text '."\n".'$blue text '.'$green green '.'$aqua aqua '."\n".'$red red '.'$light_purple light_purple '.'$yellow yellow '."\n".'$white white '.'$minecoin_gold minecoin_gold ',
+                    "lore" => '$black black ' . '$dark_blue dark_blue ' . '$dark_green dark_green ' . "\n" . '$dark_aqua dark_aqua ' . '$dark_red dark_red ' . '$dark_purple dark_purple ' . "\n" . '$gold gold ' . '$gray gray ' . '$dark_gray text ' . "\n" . '$blue text ' . '$green green ' . '$aqua aqua ' . "\n" . '$red red ' . '$light_purple light_purple ' . '$yellow yellow ' . "\n" . '$white white ' . '$minecoin_gold minecoin_gold ',
                     "items" => [
                         "diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots"
                     ]
@@ -54,58 +50,84 @@ class DeathRunes extends PluginBase implements Listener{
                 $rune["items"][] = VanillaItems::$item();
             }
             self::$runesData[strtolower($runeId)] = $rune;
-            self::$runes[$rune["name"]] = $rune["items"];
         }
         $this->getServer()->getCommandMap()->register("deathrunes", new getRune($this));
     }
 
-    private function str_replace(string $text) : string{
+    private function str_replace(string $text): string{
         return str_replace(['$black', '$dark_blue', '$dark_green', '$dark_aqua', '$dark_red', '$dark_purple', '$gold', '$gray', '$dark_gray', '$blue', '$green', '$aqua', '$red', '$light_purple', '$yellow', '$white', '$minecoin_gold',], TextFormat::COLORS, $text);
     }
 
     /**
      * @return array<string, array<string, string|array<string>>>
      */
-    public static function getRunes() : array{
+    public static function getRunes(): array{
         return self::$runesData;
     }
 
-    public function onInventoryAction(InventoryTransactionEvent $event) : void{
+    public function onInventoryAction(InventoryTransactionEvent $event): void{
         $actions = $event->getTransaction()->getActions();
         $player = $event->getTransaction()->getSource();
+        if(count($actions) != 2){
+            return;
+        }
+
+        $runeItem = null;
+        $runeSlot = null;
+        $runeInventory = null;
+
+        $targetItem = null;
+        $targetSlot = null;
+        $targetInventory = null;
+
         foreach($actions as $action){
             if($action instanceof SlotChangeAction){
-                $target = $action->getTargetItem();
-                if(in_array($target->getCustomName(), array_keys(self::$runes)) && !$action->getInventory() instanceof PlayerCursorInventory){
-                    $source = $action->getSourceItem();
-                    if($source->isNull()){
-                        return;
-                    }
-                    /** @var Item $item */
-                    foreach(self::$runes[$target->getCustomName()] as $item){
-                        if($item->equals($source, false, false) && !$source->keepOnDeath()){
-                            $event->cancel();
-                            $this->playSound($player, "note.bell");
-                            $target->pop();
-                            $source->setKeepOnDeath(true);
-                            $player->getCursorInventory()->setItem(0, $target);
-                            $action->getInventory()->setItem($action->getSlot(), $source);
-                            return;
-                        }
-                    }
-                    $this->playSound($player, "note.bass");
+                $eventTarget = $action->getTargetItem();
+                $eventSource = $action->getSourceItem();
+                if($eventSource->isNull() || $eventTarget->isNull()){
+                    return;
+                }
+                if(!self::isRune($eventSource) && !self::isRune($eventTarget)){
+                    return;
+                }
+                $eventItem = $action->getInventory()->getItem($action->getSlot());
+                if(self::isRune($eventItem)){
+                    $runeItem = $eventItem;
+                    $runeSlot = $action->getSlot();
+                    $runeInventory = $action->getInventory();
+                }else{
+                    $targetItem = $eventItem;
+                    $targetSlot = $action->getSlot();
+                    $targetInventory = $action->getInventory();
                 }
             }
         }
+
+        if(!$targetItem->keepOnDeath()){
+            foreach(self::$runesData[$runeItem->getNamedTag()->getString("rune")]["items"] as $item){
+                if($item->equals($targetItem, false, false)){
+                    $runeItem->pop();
+                    $targetItem->setKeepOnDeath(true);
+
+                    $runeInventory->setItem($runeSlot, $runeItem);
+                    $targetInventory->setItem($targetSlot, $targetItem);
+
+                    $event->cancel();
+                    $this->playSound($player, "note.bell");
+                    return;
+                }
+            }
+        }
+        $this->playSound($player, "note.bass");
     }
 
-    private function playSound(Player $player, string $sound) : void{
+    private function playSound(Player $player, string $sound): void{
         $pos = $player->getPosition();
         $packet = PlaySoundPacket::create($sound, $pos->getX(), $pos->getY(), $pos->getZ(), 150, 1);
         $player->getNetworkSession()->sendDataPacket($packet);
     }
 
-    public function onDeath(PlayerRespawnEvent $event) : void{
+    public function onDeath(PlayerRespawnEvent $event): void{
         $player = $event->getPlayer();
         $inventory = $player->getInventory();
         $armorInventory = $player->getArmorInventory();
@@ -131,13 +153,20 @@ class DeathRunes extends PluginBase implements Listener{
         }
     }
 
-    public static function getRune(string $runeId) : Item{
+    public static function getRune(string $runeId): Item{
         /** @var Item $item */
         $item = self::$runesData[$runeId]["item"];
         $enchantment = StringToEnchantmentParser::getInstance()->parse("fortune");
         $item = EnchantingHelper::enchantItem($item, [new EnchantmentInstance($enchantment)]);
         $item->setCustomName(self::$runesData[$runeId]["name"]);
-        $item->setLore([TextFormat::RESET.self::$runesData[$runeId]["lore"]]);
+        $tags = $item->getNamedTag();
+        $tags->setString("rune", $runeId);
+        $item->setNamedTag($tags);
+        $item->setLore([TextFormat::RESET . self::$runesData[$runeId]["lore"]]);
         return $item;
+    }
+
+    public static function isRune(Item $item): bool{
+        return $item->getNamedTag()->getString("rune", "null") !== "null";
     }
 }
