@@ -5,8 +5,6 @@ A plugin that adds runes to your server that will allow you to save your things 
 [![](https://poggit.pmmp.io/shield.state/DeathRunes)](https://poggit.pmmp.io/p/DeathRunes)
 [![](https://poggit.pmmp.io/shield.dl/DeathRunes)](https://poggit.pmmp.io/p/DeathRunes)
 
-You can get a rune using method `DeathRunes::getRune(string $runeId) : Item`
-
 ### Showcase:
 https://youtu.be/dfvIpFF5LIY
 
@@ -15,3 +13,9 @@ https://youtu.be/dfvIpFF5LIY
 > `/getrune <runeID=list> [count: int]` - allows you to get a rune into your inventory
 >
 > Permission: `deathrunes.command.getrune`
+>
+> ### For developers :
+>
+> You can get a rune using method `DeathRunes::getRune(string $runeId) : Item`
+>
+> if you need to check if an item is a rune, you can use `DeathRunes::isRune(Item $item) : bool`
