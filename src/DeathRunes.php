@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PrograMistV1\DeathRunes;
 
 use Exception;
+use pocketmine\event\block\BlockBreakEvent;
 use pocketmine\event\inventory\InventoryTransactionEvent;
 use pocketmine\event\Listener;
 use pocketmine\event\player\PlayerRespawnEvent;
@@ -28,11 +29,9 @@ class DeathRunes extends PluginBase implements Listener{
 
     private static array $runesData = [];
 
-    /**
-     * @throws Exception
-     */
     protected function onEnable(): void{
         $this->getServer()->getPluginManager()->registerEvents($this, $this);
+
         $runes = new Config(Path::join($this->getDataFolder(), "runes.yml"), Config::YAML,
             [
                 "armor" => [
@@ -41,10 +40,12 @@ class DeathRunes extends PluginBase implements Listener{
                     "lore" => '$black black ' . '$dark_blue dark_blue ' . '$dark_green dark_green ' . "\n" . '$dark_aqua dark_aqua ' . '$dark_red dark_red ' . '$dark_purple dark_purple ' . "\n" . '$gold gold ' . '$gray gray ' . '$dark_gray text ' . "\n" . '$blue text ' . '$green green ' . '$aqua aqua ' . "\n" . '$red red ' . '$light_purple light_purple ' . '$yellow yellow ' . "\n" . '$white white ' . '$minecoin_gold minecoin_gold ',
                     "items" => [
                         "diamond_helmet", "diamond_chestplate", "diamond_leggings", "diamond_boots"
-                    ]
+                    ],
+                    "chance" => 10,
                 ]
             ]
         );
+
         foreach($runes->getAll() as $runeId => $rune){
             $rune["name"] = $this->str_replace($rune["name"]);
             $rune["lore"] = $this->str_replace($rune["lore"]);
@@ -57,6 +58,7 @@ class DeathRunes extends PluginBase implements Listener{
             }
             self::$runesData[strtolower($runeId)] = $rune;
         }
+
         $this->getServer()->getCommandMap()->register("deathrunes", new getRune($this));
     }
 
@@ -64,11 +66,30 @@ class DeathRunes extends PluginBase implements Listener{
         return str_replace(['$black', '$dark_blue', '$dark_green', '$dark_aqua', '$dark_red', '$dark_purple', '$gold', '$gray', '$dark_gray', '$blue', '$green', '$aqua', '$red', '$light_purple', '$yellow', '$white', '$minecoin_gold',], TextFormat::COLORS, $text);
     }
 
-    /**
-     * @return array<string, array<string, string|array<string>>>
-     */
-    public static function getRunes(): array{
-        return self::$runesData;
+    public function onBlockBreak(BlockBreakEvent $event): void{
+        $player = $event->getPlayer();
+        $block = $event->getBlock();
+
+        if (mt_rand(1, 100) <= $this->getRuneChance()) {
+            $runeId = $this->getRandomRuneId();
+            $rune = self::getRune($runeId);
+
+            $player->getInventory()->addItem($rune);
+
+            $player->sendMessage("You found a " . self::$runesData[$runeId]["name"] . "!");
+            $this->playSound($player, "random.explode");
+        }
+    }
+
+    private function getRuneChance(): int{
+        $defaultChance = 10;
+        return self::$runesData[array_key_first(self::$runesData)]["chance"] ?? $defaultChance;
+    }
+
+    private function getRandomRuneId(): string{
+        $availableRunes = array_keys(self::$runesData);
+        $randomIndex = array_rand($availableRunes);
+        return $availableRunes[$randomIndex];
     }
 
     public function onInventoryAction(InventoryTransactionEvent $event): void{
@@ -157,6 +178,13 @@ class DeathRunes extends PluginBase implements Listener{
                 $armorInventory->setItem($i, $item);
             }
         }
+    }
+
+    /**
+     * @return array<string, array<string, string|array<string>>>
+     */
+    public static function getRunes(): array{
+        return self::$runesData;
     }
 
     public static function getRune(string $runeId): Item{
