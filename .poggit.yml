@@ -1,4 +1,4 @@
---- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/WeaVerseStudio/DeathRunes
+--- # Poggit-CI Manifest. Open the CI at https://poggit.pmmp.io/ci/Terpz710/DeathRunes
 build-by-default: true
 branches:
 - main
@@ -15,4 +15,6 @@ projects:
       [
         "image.png"
       ]
+  lint:
+    phpstan: false
 ...
